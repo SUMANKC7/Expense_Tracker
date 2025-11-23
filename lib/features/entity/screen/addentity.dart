@@ -86,10 +86,10 @@ class _AddEntityState extends State<AddEntity> {
               'Add New Party',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
+            // leading: IconButton(
+            //   icon: const Icon(Icons.arrow_back),
+            //   onPressed: () => Navigator.of(context).maybePop(),
+            // ),
           ),
 
           bottomNavigationBar: SafeArea(

@@ -18,60 +18,27 @@ class ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.all(8),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: SizedBox(
           height: height,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _getChartTitle(chartType),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.fullscreen),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => Scaffold(
-                            appBar: AppBar(
-                              title: Text(_getChartTitle(chartType)),
-                            ),
-                            body: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  Expanded(child: _buildMiniChart()),
-                                  const SizedBox(height: 16),
-                                  _buildLegend(
-                                    _getChartData(),
-                                    isFullScreen: true,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+              _buildHeader(context),
               const SizedBox(height: 8),
-              Expanded(
+              Flexible(
                 child: Row(
                   children: [
                     Expanded(flex: 3, child: _buildMiniChart()),
                     const SizedBox(width: 12),
-                    Expanded(flex: 2, child: _buildLegend(_getChartData())),
+                    Expanded(
+                      flex: 2,
+                      child: _LegendContainer(
+                        child: _buildLegend(_getChartData()),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -82,6 +49,52 @@ class ChartCard extends StatelessWidget {
     );
   }
 
+  // HEADER + FULLSCREEN ICON
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          _getChartTitle(chartType),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          icon: const Icon(Icons.fullscreen),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(title: Text(_getChartTitle(chartType))),
+                  body: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Expanded(child: _buildMiniChart()),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: _LegendContainer(
+                            child: _buildLegend(
+                              _getChartData(),
+                              isFullScreen: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  //   GET CHART DATA
+
   List<ChartDataModel> _getChartData() {
     switch (chartType) {
       case ChartType.expenseIncome:
@@ -91,7 +104,6 @@ class ChartCard extends StatelessWidget {
       case ChartType.cashFlow:
         return provider.getCashFlowData();
       case ChartType.monthlyTrends:
-        // For line chart, we'll create dummy legend data
         return [
           ChartDataModel(label: 'Net Flow Trend', value: 0, color: Colors.blue),
         ];
@@ -99,6 +111,8 @@ class ChartCard extends StatelessWidget {
         return provider.getCombinedData();
     }
   }
+
+  //   LEGEND
 
   Widget _buildLegend(List<ChartDataModel> data, {bool isFullScreen = false}) {
     if (data.isEmpty) {
@@ -109,80 +123,90 @@ class ChartCard extends StatelessWidget {
     final itemHeight = isFullScreen ? 32.0 : 24.0;
     final dotSize = isFullScreen ? 12.0 : 8.0;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isFullScreen) ...[
-            Text(
-              'Legend',
-              style: TextStyle(
-                fontSize: fontSize + 2,
-                fontWeight: FontWeight.bold,
-              ),
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        if (isFullScreen) ...[
+          Text(
+            'Legend',
+            style: TextStyle(
+              fontSize: fontSize + 2,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 8),
-          ],
-          ...data.map((item) {
-            final percentage = _calculatePercentage(item, data);
-            return Container(
-              height: itemHeight,
-              margin: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: dotSize,
-                    height: dotSize,
-                    decoration: BoxDecoration(
-                      color: item.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: fontSize,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (isFullScreen &&
-                            chartType != ChartType.monthlyTrends) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '${percentage.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              fontSize: fontSize - 2,
-                              color: Colors.grey[600],
+          ),
+          const SizedBox(height: 8),
+        ],
+        ...data.map((item) {
+          final percentage = _calculatePercentage(item, data);
+          return Container(
+            // height: itemHeight,
+            margin: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                // const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: dotSize,
+                            height: dotSize,
+                            decoration: BoxDecoration(
+                              color: item.color,
+                              shape: BoxShape.circle,
                             ),
                           ),
+                          SizedBox(width: 10),
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
-                      ],
-                    ),
+                      ),
+                      Row(
+                        children: [
+                          SizedBox(width: 10),
+                          Text("=>"),
+                          SizedBox(width: 10),
+                          if (isFullScreen &&
+                              chartType != ChartType.monthlyTrends)
+                            Text(
+                              '${percentage.toStringAsFixed(1)}%',
+                              style: TextStyle(
+                                fontSize: fontSize - 2,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // SizedBox(height: 10),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 
   double _calculatePercentage(ChartDataModel item, List<ChartDataModel> data) {
-    if (chartType == ChartType.monthlyTrends) return 0.0;
-
-    final total = data.fold(0.0, (sum, item) => sum + item.value);
-    return total > 0 ? (item.value / total) * 100 : 0;
+    if (chartType == ChartType.monthlyTrends) return 0;
+    final total = data.fold(0.0, (sum, i) => sum + i.value);
+    return total == 0 ? 0 : (item.value / total) * 100;
   }
+
+  // BUILD MINI CHART
 
   Widget _buildMiniChart() {
     switch (chartType) {
@@ -201,24 +225,29 @@ class ChartCard extends StatelessWidget {
     }
   }
 
+  // -------------------------
+  // PIE CHART
+  // -------------------------
   Widget _buildMiniPieChart(List<ChartDataModel> data) {
-    if (data.isEmpty || data.every((element) => element.value == 0)) {
+    if (data.isEmpty || data.every((e) => e.value == 0)) {
       return const Center(
         child: Text('No data', style: TextStyle(color: Colors.grey)),
       );
     }
 
+    final total = data.fold(0.0, (a, b) => a + b.value);
+
     return PieChart(
       PieChartData(
+        centerSpaceRadius: 20,
+        sectionsSpace: 1,
         sections: data.map((item) {
-          final total = data.fold(0.0, (sum, item) => sum + item.value);
-          final percentage = total > 0 ? (item.value / total) * 100 : 0;
-
+          final pct = total == 0 ? 0 : (item.value / total) * 100;
           return PieChartSectionData(
             value: item.value,
-            title: percentage > 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+            title: pct > 5 ? '${pct.toStringAsFixed(0)}%' : '',
             color: item.color,
-            radius: 50, // Slightly smaller to make room for legend
+            radius: 50,
             titleStyle: const TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
@@ -226,11 +255,11 @@ class ChartCard extends StatelessWidget {
             ),
           );
         }).toList(),
-        centerSpaceRadius: 20,
-        sectionsSpace: 1,
       ),
     );
   }
+
+  // LINE CHART (TREND)
 
   Widget _buildMiniLineChart() {
     final data = provider.getMonthlyTrendsData();
@@ -241,13 +270,11 @@ class ChartCard extends StatelessWidget {
       );
     }
 
-    // Find min and max values for better scaling
-    final values = data.map((d) => d.netFlow).toList();
+    final values = data.map((e) => e.netFlow).toList();
     final minValue = values.reduce((a, b) => a < b ? a : b);
     final maxValue = values.reduce((a, b) => a > b ? a : b);
-
-    // Add some padding to the range
     final range = maxValue - minValue;
+
     final paddedMin = minValue - (range * 0.1);
     final paddedMax = maxValue + (range * 0.1);
 
@@ -259,25 +286,16 @@ class ChartCard extends StatelessWidget {
         maxY: paddedMax,
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: true,
           drawHorizontalLine: true,
+          drawVerticalLine: true,
           horizontalInterval: range > 0 ? range / 4 : 1000,
           verticalInterval: 1,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: Colors.grey.withOpacity(0.3),
-              strokeWidth: 0.5,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: Colors.grey.withOpacity(0.3),
-              strokeWidth: 0.5,
-            );
-          },
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: Colors.grey.withOpacity(0.3), strokeWidth: 0.5),
+          getDrawingVerticalLine: (value) =>
+              FlLine(color: Colors.grey.withOpacity(0.3), strokeWidth: 0.5),
         ),
         titlesData: FlTitlesData(
-          show: true,
           rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
@@ -287,16 +305,12 @@ class ChartCard extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 45,
+              reservedSize: 40,
               interval: range > 0 ? range / 3 : 1000,
               getTitlesWidget: (value, meta) {
                 return Text(
                   _formatCurrency(value),
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: const TextStyle(fontSize: 8, color: Colors.black54),
                 );
               },
             ),
@@ -304,25 +318,16 @@ class ChartCard extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 25,
+              reservedSize: 20,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index >= 0 && index < data.length) {
-                  // Show every other month for better readability in small charts
-                  if (data.length > 4 && index % 2 != 0) {
-                    return const SizedBox.shrink();
-                  }
-                  return Text(
-                    data[index].month,
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
+                if (index < 0 || index >= data.length) return const SizedBox();
+                if (data.length > 4 && index % 2 != 0) return const SizedBox();
+                return Text(
+                  data[index].month,
+                  style: const TextStyle(fontSize: 8, color: Colors.black54),
+                );
               },
             ),
           ),
@@ -330,29 +335,19 @@ class ChartCard extends StatelessWidget {
         borderData: FlBorderData(
           show: true,
           border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.5), width: 1),
-            left: BorderSide(color: Colors.grey.withOpacity(0.5), width: 1),
+            bottom: BorderSide(color: Colors.grey.withOpacity(0.5)),
+            left: BorderSide(color: Colors.grey.withOpacity(0.5)),
           ),
         ),
         lineBarsData: [
           LineChartBarData(
-            spots: data.asMap().entries.map((entry) {
-              return FlSpot(entry.key.toDouble(), entry.value.netFlow);
-            }).toList(),
             isCurved: true,
-            color: Colors.blue,
             barWidth: 2,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 2,
-                  color: Colors.blue,
-                  strokeWidth: 1,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
+            color: Colors.blue,
+            spots: data.asMap().entries.map((e) {
+              return FlSpot(e.key.toDouble(), e.value.netFlow);
+            }).toList(),
+            dotData: FlDotData(show: true),
             belowBarData: BarAreaData(
               show: true,
               color: Colors.blue.withOpacity(0.1),
@@ -364,13 +359,10 @@ class ChartCard extends StatelessWidget {
   }
 
   String _formatCurrency(double value) {
-    if (value.abs() >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
-    } else if (value.abs() >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
-    } else {
-      return value.toStringAsFixed(0);
-    }
+    if (value.abs() >= 1_000_000)
+      return '${(value / 1_000_000).toStringAsFixed(1)}M';
+    if (value.abs() >= 1_000) return '${(value / 1000).toStringAsFixed(1)}k';
+    return value.toStringAsFixed(0);
   }
 
   String _getChartTitle(ChartType type) {
@@ -386,5 +378,21 @@ class ChartCard extends StatelessWidget {
       case ChartType.combined:
         return 'Overview';
     }
+  }
+}
+
+// FIX: LEGEND CONTAINER
+
+class _LegendContainer extends StatelessWidget {
+  final Widget child;
+  const _LegendContainer({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(height: constraints.maxHeight, child: child);
+      },
+    );
   }
 }
